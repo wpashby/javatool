@@ -1,0 +1,99 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+LIGHTRED='\033[1;31m'
+GREEN='\033[0;32m'
+LIGHTGREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+NOCOLOR='\033[0m'
+
+function javacoutput {
+  echo ""
+  echo -e "$2----------------------------------------------------$NOCOLOR"
+  cat $1"log.txt"
+  echo -e "$2----------------------------------------------------$NOCOLOR"
+}
+
+
+while getopts ":cr" opt; do
+  case ${opt} in 
+    c ) #echo "you chose to compile only"
+        OPTIONFLAG="c"
+      ;;
+    r ) #echo "you chose to only run the class"
+        OPTIONFLAG="r"
+      ;;
+    \? ) echo "usage: cprj -c | -r"
+         exit 1
+      ;;
+    * ) OPTIONFLAG="b"
+  esac
+done
+
+case $OPTIONFLAG in 
+  c ) INPUTFILE=$2
+      JAVAEXTEN=".java"
+      SOURCEFILE="$INPUTFILE$JAVAEXTEN"
+      echo "Compiling..."
+      javac $SOURCEFILE 2> $INPUTFILE"log.txt"
+      TRYCOMPILE=`cat $INPUTFILE"log.txt"`
+      ERROREXCEPT=${TRYCOMPILE:0:5}
+      if [ "$TRYCOMPILE" = '' ]; then
+        echo "The file" $SOURCEFILE "is compiled and ready to run"
+        javacoutput $INPUTFILE $LIGHTGREEN
+        rm $INPUTFILE"log.txt"
+      elif [ "$ERROREXCEPT" = 'Note:' ]; then
+        echo "The file" $SOURCEFILE "is compiled and ready to run with the following notes:"
+        javacoutput $INPUTFILE $LIGHTGREEN
+        rm $INPUTFILE"log.txt"
+      elif [ "$ERROREXCEPT" = 'warni' ]; then
+        echo "The file" $SOURCEFILE "is compiled and ready to run with the following warnings:"
+        javacoutput $INPUTFILE $YELLOW
+        rm $INPUTFILE"log.txt"
+      else
+        echo "Error compiling, see below"
+        javacoutput $INPUTFILE $LIGHTRED
+        rm $INPUTFILE"log.txt"
+      fi
+    ;;
+  r ) INPUTFILE=$2
+      java $INPUTFILE $3 $4 $5 $6 $7 $8 $9
+    ;;
+  * ) INPUTFILE=$1
+      JAVAEXTEN=".java"
+      SOURCEFILE="$INPUTFILE$JAVAEXTEN"
+      echo "Compiling..."
+      javac $SOURCEFILE 2> $INPUTFILE"log.txt"
+      TRYCOMPILE=`cat $INPUTFILE"log.txt"`
+      ERROREXCEPT=${TRYCOMPILE:0:5}
+      if [ "$TRYCOMPILE" = '' ]; then
+        echo "The file" $SOURCEFILE "is compiled and ready to run"
+        javacoutput $INPUTFILE $LIGHTGREEN
+        java $INPUTFILE $2 $3 $4 $5 $6 $7 $8 $9
+        rm $INPUTFILE"log.txt"
+      elif [ "$ERROREXCEPT" = 'Note:' ]; then
+        echo "The file" $SOURCEFILE "is compiled and ready to run with the following notes:"
+        javacoutput $INPUTFILE $LIGHTGREEN
+        java $INPUTFILE $2 $3 $4 $5 $6 $7 $8 $9
+        rm $INPUTFILE"log.txt"
+      elif [ "$ERROREXCEPT" = 'warni' ]; then
+        echo "The file" $SOURCEFILE "is compiled and ready to run with the following warnings:"
+        javacoutput $INPUTFILE $YELLOW
+        echo -n "Are you sure you want to run the program? (y/n): "
+        read RUNWARN
+        if [ "$RUNWARN" = 'y' -o "$RUNWARN" = 'Y' ]; then
+          echo "Running progam with active warnings..."
+          javacoutput $INPUTFILE $LIGHTGREEN
+          java $INPUTFILE $2 $3 $4 $5 $6 $7 $8 $9
+          rm $INPUTFILE"log.txt"
+        else
+          echo "Run stopped due to warnings"
+        fi
+      else
+        echo "Error compiling, see below"
+        javacoutput $INPUTFILE $LIGHTRED
+      fi
+    ;;
+esac
+
+echo ""
